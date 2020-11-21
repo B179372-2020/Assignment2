@@ -130,11 +130,13 @@ subprocess.call("/localdisk/data/BPSM/Assignment2/pullseq -i protein_seq.fa -n h
 subprocess.call("makeblastdb -in protein_seq.fa -dbtype prot -out selfdb", shell=True)
 
 ### Run blastp of our pullseq_pro_seq.fa against the selfdb database, using parameters, saved to the file blastoutput.out
-subprocess.call("blastp -db selfdb -query pullseq_pro_seq.fa -outfmt 7 > blastoutput.out",shell=True)
-#subprocess.call("blastp -db selfdb -query pullseq_pro_seq.fa > blastoutput.out",shell=True)
+subprocess.call("blastp -db selfdb -query pullseq_pro_seq.fa -outfmt 7 > blastoutput.out", shell=True)
 
-
-
+### Plot conservation of a sequence alignment
+### get a similarity plot of aligned sequences(plotcon.svg)
+subprocess.call("plotcon -sequence ali.fa -winsize 5 -graph svg", shell=True)
+### show the graph
+subprocess.call("eog plotcon.svg", shell=True)
 
 
 
