@@ -112,21 +112,26 @@ def find_similar_250_seq():
     ### Get index numbers of most similar seq
     index_list = [i for i,x in enumerate(count_list) if x==min(count_list)]
     ### Save the name of the most conservative seq to a txt file 
-    for n in index_list:
-        with open("homo.txt","a") as f:
-            f.write(name_list[n]+"\n")
+    #for n in index_list:
+    #    with open("homo.txt","a") as f:
+    #        f.write(name_list[n]+"\n")
                 
+    with open("homo.txt","w+") as f:
+        f.write(name_list[0])
+
+
     return count_dict
-#find_similar_250_seq()
+find_similar_250_seq()
 
 ### Extrace sequences in homo.txt 
-#subprocess.call("/localdisk/data/BPSM/Assignment2/pullseq -i ali.fa -n homo.txt > pullseq_pro_seq.fa", shell=True)
+subprocess.call("/localdisk/data/BPSM/Assignment2/pullseq -i protein_seq.fa -n homo.txt > pullseq_pro_seq.fa", shell=True)
 
 ### make a database
 subprocess.call("makeblastdb -in protein_seq.fa -dbtype prot -out selfdb", shell=True)
 
 ### Run blastp of our pullseq_pro_seq.fa against the selfdb database, using parameters, saved to the file blastoutput.out
-#subprocess.call("blastp -db selfdb -query pullseq_pro_seq.fa -format 7 > blastoutput.out")
+subprocess.call("blastp -db selfdb -query pullseq_pro_seq.fa -outfmt 7 > blastoutput.out",shell=True)
+#subprocess.call("blastp -db selfdb -query pullseq_pro_seq.fa > blastoutput.out",shell=True)
 
 
 
