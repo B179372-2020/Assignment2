@@ -28,14 +28,14 @@ def obtain_search_term():
 
     return protein_family_name,taxonomic_group_name
 
-### protein_family_name,taxonomic_group_name =  obtain_search_term()
+protein_family_name,taxonomic_group_name =  obtain_search_term()
 #print(protein_family_name)
 #print(taxonomic_group_name)
 
 ### obtain the relevant protein sequence data, save to a file
-# es_com = "esearch -db protein -query \""+taxonomic_group_name+" [organism] AND "+protein_family_name+" [protein]\"|efetch -format fasta > protein_seq.fa"
+es_com = "esearch -db protein -query \""+taxonomic_group_name+" [organism] AND "+protein_family_name+" [protein]\"|efetch -format fasta > protein_seq.fa"
 
-es_com = "esearch -db protein -query 'aves[organism] AND glucose-6-phosphatase[protein]' |efetch -format fasta > protein_seq.fa"
+#es_com = "esearch -db protein -query 'aves[organism] AND glucose-6-phosphatase[protein]' |efetch -format fasta > protein_seq.fa"
 #######subprocess.call(es_com,shell=True)
 
 #def _esearch(search_term,email,database):
@@ -69,6 +69,9 @@ es_com = "esearch -db protein -query 'aves[organism] AND glucose-6-phosphatase[p
 
 ### alignment
 #os.system("clustalo -i protein_seq.fa --maxnumseq 250 -o ali.fa")
+#subprocess.call("clustalo -i protein_seq.fa --outfmt 1 -o ali.fa", shell=True)
+subprocess.call("clustalo -i protein_seq.fa -o ali.fa --force", shell=True)
+
 
 def find_similar_250_seq():
     '''
@@ -106,11 +109,26 @@ def find_similar_250_seq():
     count_dict_sorted = sorted(count_dict.items(), key=lambda  kv:(kv[1],kv[0]))
     print(count_dict_sorted)
     
-    ### Gets index numbers of most similar seq
+    ### Get index numbers of most similar seq
     index_list = [i for i,x in enumerate(count_list) if x==min(count_list)]
-    
+    ### Save the name of the most conservative seq to a txt file 
+    for n in index_list:
+        with open("homo.txt","a") as f:
+            f.write(name_list[n]+"\n")
+                
     return count_dict
 #find_similar_250_seq()
+
+### Extrace sequences in homo.txt 
+#subprocess.call("/localdisk/data/BPSM/Assignment2/pullseq -i ali.fa -n homo.txt > pullseq_pro_seq.fa", shell=True)
+
+### make a database
+subprocess.call("makeblastdb -in protein_seq.fa -dbtype prot -out selfdb", shell=True)
+
+### Run blastp of our pullseq_pro_seq.fa against the selfdb database, using parameters, saved to the file blastoutput.out
+#subprocess.call("blastp -db selfdb -query pullseq_pro_seq.fa -format 7 > blastoutput.out")
+
+
 
 
 
