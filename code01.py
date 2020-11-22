@@ -24,7 +24,7 @@ def obtain_search_term():
             final_search_term = protein_family_name + " in " + taxonomic_group_name
             print("\nThe term you enter is:", final_search_term, "\n")
     if tf == 'no':
-            print("\nWe are going to obtain the relevant protein sequence data..."+"\n")
+            print("\nWe are going to obtain the relevant protein sequence data and analyse them..."+"\n")
 
     return protein_family_name,taxonomic_group_name
 
@@ -107,7 +107,7 @@ def find_similar_250_seq():
 
     ### Dictionary sorted by value from small to large
     count_dict_sorted = sorted(count_dict.items(), key=lambda  kv:(kv[1],kv[0]))
-    print(count_dict_sorted)
+    #print(count_dict_sorted)
     
     ### Get index numbers of most similar seq
     index_list = [i for i,x in enumerate(count_list) if x==min(count_list)]
@@ -141,7 +141,30 @@ subprocess.call("eog plotcon.svg", shell=True)
 
 ### read sequences(protein_seq.fa) and write them to individual files
 subprocess.call("seqretsplit -sequence protein_seq.fa -sformat fasta -osformat fasta",shell=True)
+
+
 ### Scan a protein sequence with motifs from the PROSITE database
-#patmatmotifs -sequence -outfile 
+def motifs():
+    '''
+    1. obtain name of each sequence
+    2. run patmatmotifs : Scan a protein sequence with motifs from the PROSITE database
+    '''
 
+    nameline = []
+    name_list = []
 
+    with open("ali.fa","r") as alignment:
+        for line in alignment.readlines():    ### Read each line of the file
+            line = line.strip()    ### Remove spaces and tab at the beginning and end of each line
+            if re.match(r'^\>(.*)',line):
+                line = line.strip(">")     ### Remove '>' at the begining
+                nameline = line.split()
+                filename = nameline[0]+".fasta"    ### Extract the sequence name                  
+                filename = filename.lower()
+                #print(filename)
+		
+                subprocess.call("patmatmotifs "+ filename,shell=True)        
+            else:
+                pass
+
+motifs()
