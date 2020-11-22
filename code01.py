@@ -97,7 +97,7 @@ def find_similar_250_seq():
     count_list.append(count_)   ### The '-' number of the last sequence was not added to the list in the loop, so it is added here
     del count_list[0]     ### The first element in count_list[] is invalid, so delete it
     #print(count_list,len(count_list),name_list,len(name_list))
-    
+    print(name_list)    
     ### dictionary {seq_name : number of minus signs}
     count_dict = {}
     for i in range(len(name_list)):
@@ -139,6 +139,9 @@ subprocess.call("plotcon -sequence ali.fa -winsize 5 -graph svg", shell=True)
 subprocess.call("eog plotcon.svg", shell=True)
 
 
-
+### read sequences(protein_seq.fa) and write them to individual files
+subprocess.call("seqretsplit -sequence protein_seq.fa -sformat fasta -osformat fasta",shell=True)
+### Scan a protein sequence with motifs from the PROSITE database
+#patmatmotifs -sequence -outfile 
 
 
