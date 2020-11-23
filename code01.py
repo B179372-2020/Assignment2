@@ -6,6 +6,8 @@ import subprocess
 import re
 import sys
 
+
+
 def obtain_search_term():
     '''
     User specify the protein family and the taxonomic group
@@ -32,6 +34,7 @@ def obtain_search_term():
 
 
 
+
 def total_seq_number():
     '''
     Tell the user the total number of sequences
@@ -52,6 +55,8 @@ def total_seq_number():
 
 
  
+
+
 def get_appropriate_total_num(count):
     '''
     Determine if the number of sequences is appropriate
@@ -59,7 +64,7 @@ def get_appropriate_total_num(count):
     If number > 1000, let the user choose whether or not to continue
 
     '''
-    if count > 100:  ###############################!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+    if count > 1000:  ###############################!!!!!!!!!!!!!!!!!!!!!!!!!!!!
         print("We recommend that the total number of sequences is less than 1000.\nThe current number is more than 1000.\n")
         yn=input("Do you want to continue? (please enter 'yes' or 'no'):\n")
         if yn == 'yes':
@@ -95,11 +100,11 @@ def similar_250_seq_and_plot():
             if re.match(r'^\#(.*)',line):  ### Find heading lines
                 pass
             else:
-                if c <= 4:  #!!!!!!!!!!!!!!!!1
+                if c <= 249: 
                     c = c+1
                     spline = line.split()    ### Split the line into a list
                     with open ("homo250.txt","a") as homo:
-                        homo.write(str(spline)+"\n")    
+                        homo.write(str(spline[1])+"\n")  ### Extract the sequence name  
                 else:
                     break
     
@@ -114,43 +119,6 @@ def similar_250_seq_and_plot():
     subprocess.call("eog plotcon.svg", shell=True)
 
 
-
-
-def one_seq_for_BLAST():
-    '''
-    When total_seq_num <= 250:
-    Save the name of the most conservative seq to a txt file
-    Get the most similar protein sequence, save it to "pullseq_1.fa" for BLAST
-    '''
-    count_ = 0  ### Record the number of minus signs
-    count_list = []  ### Store the number of minus signs per sequence
-    nameline = []    ### Store the splited first line of FASTA format
-    name_list = []   ### Store the name of esch sequence
-
-    ### Get the sequence name and number of minus signs, stored in two lists, respectively
-    with open("ali.fa","r") as alignment:
-        for line in alignment.readlines():   ### Read each line of the file
-            line = line.strip()    ### Remove spaces and tabs at the beginning and end of each line
-            if re.match(r'^\>(.*)',line):  ### Find the heading line
-                line = line.strip(">")     ### Remove '>' at the begining
-                nameline = line.split()    ### Split the line into a list
-                name_list.append(nameline[0])    ### Extract the sequence name
-                count_list.append(count_)        ### Obtain the number of '-'
-                count_ = 0     ### The counter returns to zero and is ready to count the next '-' number
-            else:
-                count_ = count_ + line.count("-")
-    count_list.append(count_)   ### The '-' number of the last sequence was not added to the list in the loop, so it is added here
-    del count_list[0]     ### The first element in count_list[] is invalid, so delete it
-
-    ### Get index numbers of most similar seq
-    index_list = [i for i,x in enumerate(count_list) if x==min(count_list)]
-    ### Save the name of the most conservative seq to "homo.txt"
-    ### Just take the first sequence
-    n = index_list[0]
-    with open("homo.txt","w") as f:
-        f.write(name_list[n])
-    subprocess.call("/localdisk/data/BPSM/Assignment2/pullseq -i protein_seq.fa -n homo.txt > pullseq_1.fa", shell=True)
-    
 
 
 
@@ -180,10 +148,13 @@ def motifs():
 
 
 
+
+
 def __main__():
 
     ### Call obtain_search_term(). Get the user's input.
     protein_family_name, taxonomic_group_name =  obtain_search_term()
+
 
     ### Display the result of esearch on the screen and save it to es_result.txt
     es = "esearch -db protein -query \""+taxonomic_group_name+" [organism] AND "+protein_family_name+" [protein]\""
@@ -192,27 +163,30 @@ def __main__():
     es_com="esearch -db protein -query \""+taxonomic_group_name+" [organism] AND "+protein_family_name+" [protein]\">es_result.txt"
     subprocess.call(es_com, shell=True)
 
+
     ### Call total_seq_number(), the number shows on the screen
     ### Get the total number of sequences
     total = total_seq_number()
+
 
     ### Call get_appropriate_total_num()
     ### Determine if the number of sequences is appropriate
     ### Give advice to users: Greater than 1000 is not recommended
     ### If number > 1000, let the user choose whether or not to continue 
     get_appropriate_total_num(total)
+
     
     ### User chooses to continue
     ### Obtain the relevant protein sequence data, save to "protein_seq.fa"
     es_ef_com = "esearch -db protein -query \""+taxonomic_group_name+" [organism] AND "+protein_family_name+" [protein]\"|efetch -format fasta > protein_seq.fa"
     subprocess.call(es_ef_com, shell=True)
 
+
     ### ALIGN
     ### Align the original sequence. Get the aligned file "ali.fa".
     subprocess.call("clustalo -i protein_seq.fa -o ali.fa --force", shell=True)
 
     
-
     ### BLAST
     ### Make a database
     subprocess.call("makeblastdb -in protein_seq.fa -dbtype prot -out selfdb", shell=True)
@@ -227,12 +201,11 @@ def __main__():
     print("BLAST finished. Output: blastoutput.out\n")
 
 
-
     ### PLOT
     ### PLOT conservation of a sequence alignment & show the graph AND find the most conservative sequence for BLAST
     ### No more than 250 sequences can be used for PLOT
     ### If the total number of sequences is greater than 250, we have to pick the 250 that have the highest similarity
-    if total <= 5:  #!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+    if total <= 250: 
         ### When total_seq_num <= 250:
         ### Get a similarity plot of aligned sequences (plotcon.svg)
         print("Plotting...")
@@ -247,8 +220,6 @@ def __main__():
         similar_250_seq_and_plot()
  
         
-
-'''
     ### MOTIFS 
     ### Read sequences(protein_seq.fa) and write them to individual files
     subprocess.call("seqretsplit -sequence protein_seq.fa -sformat fasta -osformat fasta",shell=True)
@@ -257,5 +228,5 @@ def __main__():
     ### Then run patmatmotifs: Scan a protein sequence with motifs from the PROSITE database
     motifs()
 
-'''
+
 __main__()
