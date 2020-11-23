@@ -59,7 +59,7 @@ def get_appropriate_total_num(count):
     If number > 1000, let the user choose whether or not to continue
 
     '''
-    if count > 100:
+    if count > 100:  ###############################!!!!!!!!!!!!!!!!!!!!!!!!!!!!
         print("We recommend that the total number of sequences is less than 1000.\nThe current number is more than 1000.\n")
         yn=input("Do you want to continue? (please enter 'yes' or 'no'):\n")
         if yn == 'yes':
@@ -80,7 +80,7 @@ def get_appropriate_total_num(count):
 
 
 
-def similar_250_seq_for_plot():
+def similar_250_seq_and_plot():
     '''
     for PLOT:
     When total_seq_num > 250
@@ -88,53 +88,21 @@ def similar_250_seq_for_plot():
     Plot and show the graph
 
     '''
-    count_ = 0  ### Record the number of minus signs
-    count_list = []  ### Store the number of minus signs per sequence
-    nameline = []    ### Store the splited first line of FASTA format 
-    name_list = []   ### Store the name of esch sequence
-    
-    ### Get the sequence name and number of minus signs, stored in two lists, respectively
-    with open("ali.fa","r") as alignment:
-        for line in alignment.readlines():   ### Read each line of the file
+    c = 0  ### Set a counter, count 250 sequences
+    with open("blastoutput.out","r") as bout:
+        for line in bout.readlines():   ### Read each line of the file
             line = line.strip()    ### Remove spaces and tabs at the beginning and end of each line
-            if re.match(r'^\>(.*)',line):  ### Find the heading line
-                line = line.strip(">")     ### Remove '>' at the begining 
-                nameline = line.split()    ### Split the line into a list
-                name_list.append(nameline[0])    ### Extract the sequence name
-                count_list.append(count_)        ### Obtain the number of '-'
-                count_ = 0     ### The counter returns to zero and is ready to count the next '-' number
+            if re.match(r'^\#(.*)',line):  ### Find heading lines
+                pass
             else:
-                count_ = count_ + line.count("-")
-    count_list.append(count_)   ### The '-' number of the last sequence was not added to the list in the loop, so it is added here
-    del count_list[0]     ### The first element in count_list[] is invalid, so delete it
-    #print(count_list,len(count_list),name_list,len(name_list))
+                if c <= 4:  #!!!!!!!!!!!!!!!!1
+                    c = c+1
+                    spline = line.split()    ### Split the line into a list
+                    with open ("homo250.txt","a") as homo:
+                        homo.write(str(spline)+"\n")    
+                else:
+                    break
     
-
-    ### Merge the data from two lists into a dictionary   
-    ### dictionary count_dict = {seq_name : number of minus signs}
-    count_dict = {}
-    for i in range(len(name_list)):
-        key = name_list[i]
-        value = count_list[i]
-        count_dict[key] = value
-
-    ### Dictionary sorted by value from small to large
-    count_dict_sorted = sorted(count_dict.items(), key=lambda  kv:(kv[1],kv[0]))
-
-
-    ### Find the most similar one's name for BLAST
-    with open ("homo.txt","w") as f:   ### will get "pullseq_1.fa"
-        f.write(count_dict_sorted[0][0])
-    ### get the most similar protein sequence, save it to "pullseq_1.fa" for BLAST
-    subprocess.call("/localdisk/data/BPSM/Assignment2/pullseq -i protein_seq.fa -n homo.txt > pullseq_1.fa", shell=True)
-
-
-    ### Find the 250 most similar protein sequences' name
-    for x in range(250):### 这里可以改数字
-        with open ("homo250.txt","a") as fn:   ### will get "pullseq_250.fa"
-            fn.write(count_dict_sorted[x][0]+"\n")
-    #print(count_dict_sorted[0][0])  得到名字
-    # 可以提取对齐文件嘛？？？
     ### get 250 protein sequences, save them to "pullseq_250.fa" for PLOT
     subprocess.call("/localdisk/data/BPSM/Assignment2/pullseq -i ali.fa -n homo250.txt > pullseq_250.fa", shell=True)            
     #subprocess.call("/localdisk/data/BPSM/Assignment2/pullseq -i protein_seq.fa -n homo.txt > pullseq_1.fa", shell=True)
@@ -183,13 +151,6 @@ def one_seq_for_BLAST():
         f.write(name_list[n])
     subprocess.call("/localdisk/data/BPSM/Assignment2/pullseq -i protein_seq.fa -n homo.txt > pullseq_1.fa", shell=True)
     
-
-### Extrace similar sequences
-#subprocess.call("/localdisk/data/BPSM/Assignment2/pullseq -i protein_seq.fa -n homo.txt > pullseq_1.fa", shell=True)
-
-### Plot conservation of a sequence alignment
-### Alignment again
-#subprocess.call("clustalo -i pullseq_250.fa -o ali.fa --force", shell=True)
 
 
 
@@ -250,17 +211,30 @@ def __main__():
     ### Align the original sequence. Get the aligned file "ali.fa".
     subprocess.call("clustalo -i protein_seq.fa -o ali.fa --force", shell=True)
 
+    
+
+    ### BLAST
+    ### Make a database
+    subprocess.call("makeblastdb -in protein_seq.fa -dbtype prot -out selfdb", shell=True)
+    print("\n")
+    ### Get the sequence that best fits the alignment
+    ### Create a consensus sequence from a multiple alignment
+    subprocess.call("cons -sequence ali.fa -outseq one_seq.fa", shell=True)
+    ### Run blastp against selfdb database
+    ### Print out in the form of tables, save to the file blastoutput.out
+    #subprocess.call("blastp -db selfdb -query pullseq_1.fa -outfmt 7 > blastoutput.out", shell=True)
+    subprocess.call("blastp -db selfdb -query one_seq.fa -outfmt 7 > blastoutput.out", shell=True)
+    print("BLAST finished. Output: blastoutput.out\n")
+
+
+
     ### PLOT
     ### PLOT conservation of a sequence alignment & show the graph AND find the most conservative sequence for BLAST
     ### No more than 250 sequences can be used for PLOT
     ### If the total number of sequences is greater than 250, we have to pick the 250 that have the highest similarity
-    if total <= 250:
-        ### When total_seq_num <= 250, call one_seq_for_BLAST()
-        ### Save the name of the most conservative seq to a txt file
-        ### Get the most similar protein sequence, save it to "pullseq_1.fa" for BLAST
-        one_seq_for_BLAST() 
-
-        ### get a similarity plot of aligned sequences (plotcon.svg)
+    if total <= 5:  #!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+        ### When total_seq_num <= 250:
+        ### Get a similarity plot of aligned sequences (plotcon.svg)
         print("Plotting...")
         subprocess.call("plotcon -sequence ali.fa -winsize 5 -graph svg", shell=True)
         ### show the graph
@@ -268,20 +242,13 @@ def __main__():
         subprocess.call("eog plotcon.svg", shell=True)
         
     else:
-        ### When total_seq_num > 250, call find_similar_250_seq()
-        ### Pick the 250 that have the highest similarity, save them to "pullseq_250.fa" for PLOT
-        ### Get the most similar protein sequence, save it to "pullseq_1.fa" for BLAST
-        find_similar_250_seq()
+        ### When total_seq_num > 250:
+        ### According to the result of BLAST, pick 250 highest similarity sequences, save them to "pullseq_250.fa" for PLOT
+        similar_250_seq_and_plot()
+ 
+        
 
-
-    ### BLAST
-    ### Make a database
-    subprocess.call("makeblastdb -in protein_seq.fa -dbtype prot -out selfdb", shell=True)
-    ### Run blastp of our pullseq_1.fa against selfdb database
-    ### Print out in the form of tables, save to the file blastoutput.out
-    subprocess.call("blastp -db selfdb -query pullseq_1.fa -outfmt 7 > blastoutput.out", shell=True)
-   
-
+'''
     ### MOTIFS 
     ### Read sequences(protein_seq.fa) and write them to individual files
     subprocess.call("seqretsplit -sequence protein_seq.fa -sformat fasta -osformat fasta",shell=True)
@@ -290,5 +257,5 @@ def __main__():
     ### Then run patmatmotifs: Scan a protein sequence with motifs from the PROSITE database
     motifs()
 
-
+'''
 __main__()
