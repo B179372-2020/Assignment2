@@ -38,7 +38,6 @@ def obtain_search_term():
 def total_seq_number():
     '''
     Tell the user the total number of sequences
-    Give the user the option to continue or not continue with the current dataset
 
     '''
     with open("es_result.txt","r") as es:
@@ -60,11 +59,14 @@ def total_seq_number():
 def get_appropriate_total_num(count):
     '''
     Determine if the number of sequences is appropriate
-    Give advice to users: Greater than 1000 is not recommended
-    If number > 1000, let the user choose whether or not to continue
+    Give the user the option to continue or not continue with the current dataset
 
+    Give advice to users: Greater than 1000 is not recommended
+    If number > 1000: let the user choose whether or not to continue
+    If number <= 0: number is wrong. Process ended.
+    If 0<number<=1000: process continue.
     '''
-    if count > 1000:  ###############################!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+    if count > 1000: 
         print("We recommend that the total number of sequences is less than 1000.\nThe current number is more than 1000.\n")
         yn=input("Do you want to continue? (please enter 'yes' or 'no'):\n")
         if yn == 'yes':
@@ -88,9 +90,8 @@ def get_appropriate_total_num(count):
 def similar_250_seq_and_plot():
     '''
     for PLOT:
-    When total_seq_num > 250
-    We need to fine the 250 most similar protein sequences
-    Plot and show the graph
+    When total_seq_num > 250: we need to pick the 250 most similar protein sequences.
+    Plot and show the graph.
 
     '''
     c = 0  ### Set a counter, count 250 sequences
@@ -110,8 +111,7 @@ def similar_250_seq_and_plot():
     
     ### get 250 protein sequences, save them to "pullseq_250.fa" for PLOT
     subprocess.call("/localdisk/data/BPSM/Assignment2/pullseq -i ali.fa -n homo250.txt > pullseq_250.fa", shell=True)            
-    #subprocess.call("/localdisk/data/BPSM/Assignment2/pullseq -i protein_seq.fa -n homo.txt > pullseq_1.fa", shell=True)
-
+    
     ### PLOT & show
     print("Plotting...")
     subprocess.call("plotcon -sequence pullseq_250.fa -winsize 5 -graph svg", shell=True)
@@ -122,29 +122,36 @@ def similar_250_seq_and_plot():
 
 
 
-def motifs():
+def motifs(count):
     '''
     Scan a protein sequence with motifs from the PROSITE database
-    1. obtain name of each protein sequence
-    2. run patmatmotifs : Scan a protein sequence with motifs from the PROSITE database
+    If total_seq_num <= 250: scan each protein sequence with motifs from the PROSITE database
+    If total_seq_num > 250: pick 250 sequences that have the highest similarity to scan
+
     '''
 
     nameline = []
     name_list = []
+    if count <= 250:
+        with open("ali.fa","r") as alignment:
+            for line in alignment.readlines():    ### Read each line of the file
+                line = line.strip()    ### Remove spaces and tab at the beginning and end of each line
+                if re.match(r'^\>(.*)',line):
+                    line = line.strip(">")     ### Remove '>' at the begining
+                    nameline = line.split()
+                    filename = nameline[0]+".fasta"    ### Extract the sequence name                  
+                    filename = filename.lower()
+                    subprocess.call("patmatmotifs "+ filename,shell=True)        
+                else:
+                    pass
+    else:
+        ### count > 250
+        with open ("homo250.txt","r") as pick:
+            for line in pick.readlines():
+                line = line.strip()
+                filename = line.lower()
+                subprocess.call("patmatmotifs "+ filename,shell=True)
 
-    with open("ali.fa","r") as alignment:
-        for line in alignment.readlines():    ### Read each line of the file
-            line = line.strip()    ### Remove spaces and tab at the beginning and end of each line
-            if re.match(r'^\>(.*)',line):
-                line = line.strip(">")     ### Remove '>' at the begining
-                nameline = line.split()
-                filename = nameline[0]+".fasta"    ### Extract the sequence name                  
-                filename = filename.lower()
-                #print(filename)
-		
-                subprocess.call("patmatmotifs "+ filename,shell=True)        
-            else:
-                pass
 
 
 
@@ -195,14 +202,13 @@ def __main__():
     ### Create a consensus sequence from a multiple alignment
     subprocess.call("cons -sequence ali.fa -outseq one_seq.fa", shell=True)
     ### Run blastp against selfdb database
-    ### Print out in the form of tables, save to the file blastoutput.out
-    #subprocess.call("blastp -db selfdb -query pullseq_1.fa -outfmt 7 > blastoutput.out", shell=True)
+    ### Output in the form of tables, save to the file blastoutput.out
     subprocess.call("blastp -db selfdb -query one_seq.fa -outfmt 7 > blastoutput.out", shell=True)
     print("BLAST finished. Output: blastoutput.out\n")
 
 
     ### PLOT
-    ### PLOT conservation of a sequence alignment & show the graph AND find the most conservative sequence for BLAST
+    ### PLOT conservation of a sequence alignment & show the graph 
     ### No more than 250 sequences can be used for PLOT
     ### If the total number of sequences is greater than 250, we have to pick the 250 that have the highest similarity
     if total <= 250: 
@@ -226,7 +232,7 @@ def __main__():
     ### Call motifs()
     ### Obtain name of each protein sequence
     ### Then run patmatmotifs: Scan a protein sequence with motifs from the PROSITE database
-    motifs()
+    motifs(total)
 
 
 __main__()
