@@ -1,7 +1,7 @@
 #!/usr/bin/python3
 #coding utf-8
 
-from Bio import Entrez
+
 import subprocess
 import re
 import sys
